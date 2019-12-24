@@ -1,0 +1,4 @@
+"id (N)","name (S)","activated (BOOL)","price (N)"
+"1","parking_camera","false","350"
+"2","four_zone_climate_control","true","400"
+"3","remote_garage_door_opener","false","370"
