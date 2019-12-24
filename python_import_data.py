@@ -2,7 +2,7 @@ import boto3
 import sys
 import csv
 import argparse
-
+import json
 
 def main():
     parser = argparse.ArgumentParser(
@@ -27,6 +27,8 @@ def main():
     # lst_header_row will contain the first row of the CSV file
     lst_header_row = []
 
+    lst_data_types=[]
+
     dynamo_resource = boto3.resource("dynamodb", region_name="us-east-1")
 
     sys.stdout.write("Opening connection to dynamodb service... ")
@@ -46,17 +48,35 @@ def main():
             str_column_name = field.split(" ")[0]
             str_column_type = field.split(" ")[1]
             lst_metadata.append(str_column_name)
+            lst_data_types.append(str_column_type)
 
         print("lst_metadata: " + str(lst_metadata))
+        print("lst_data_types: " + str(lst_data_types))
 
         for row in csv_reader:  # row is a list of strings representing a record in the csv file
             dict_item = {}
 
             for col in range(0, len(lst_metadata)):
-                dict_item[lst_metadata[col]] = row[col]
+                # perform type conversion
+                if(lst_data_types[col]=="(N)"):
+                    # print(lst_metadata[col] + " is a number type, performing type conversion...")
+                    data=row[col]
+                    converted_data=int(data)
+                    dict_item[lst_metadata[col]] = converted_data
+                elif(lst_data_types[col]=="(BOOL)"):
+                    # print(lst_metadata[col] + " is a bool type, performing type conversion...")
+                    data=row[col]
+                    if(data=="true"): converted_data=True
+                    if(data=="false"): converted_data=False
+                    dict_item[lst_metadata[col]] = converted_data
+                else:
+                    dict_item[lst_metadata[col]] = row[col]
 
             lst_items.append(dict_item)
         # for row in csv_reader
+
+    # debugging - print the list of items to import before doing the work
+    # print(json.dumps(lst_items, indent=4))
 
     # put each item into the dynamo table
     sys.stdout.write("Inserting items into " + str_table_name + "... ")
@@ -70,15 +90,4 @@ def main():
 
     print("done.")
 
-
 main()
-
-# import data from a CSV file into a dynamodb table
-# tabledef is in the following format:
-
-# "action_name (S)","prompt (S)","steps (M)"
-# "cameraAny","your vehicle does not have camera module installed, displaying optional modules on central display, prices start at USD$499 excluding tax.","{  ""DisplayPanel"" : { ""M"" : {      ""end"" : { ""N"" : ""9"" },      ""start"" : { ""N"" : ""0"" }    }  }}"
-# "climateControlFanSpeedDecrease","press down Left Fan Speed Button or Right Fan Speed Button","{  ""LeftFanSpeedButton"" : { ""M"" : {      ""end"" : { ""N"" : ""4"" },      ""start"" : { ""N"" : ""0"" }    }  },  ""RightFanSpeedButton"" : { ""M"" : {      ""end"" : { ""N"" : ""4"" },      ""start"" : { ""N"" : ""0"" }    }  }}"
-# "climateControlFanSpeedIncrease","lift up Left Fan Speed Button or Right Fan Speed Button","{  ""LeftFanSpeedButton"" : { ""M"" : {      ""end"" : { ""N"" : ""4"" },      ""start"" : { ""N"" : ""0"" }    }  },  ""RightFanSpeedButton"" : { ""M"" : {      ""end"" : { ""N"" : ""4"" },      ""start"" : { ""N"" : ""0"" }    }  }}"
-# "climateControlRearSeatsChange","press down zone control button to select rear seats option and use temperature dial on left or right to adjust the temperature.","{  ""LeftTemperatureDial"" : { ""M"" : {      ""end"" : { ""N"" : ""5"" },      ""start"" : { ""N"" : ""4"" }    }  },  ""RightTemperatureDial"" : { ""M"" : {      ""end"" : { ""N"" : ""7.5"" },      ""start"" : { ""N"" : ""5"" }    }  },  ""ZoneControlButton"" : { ""M"" : {      ""end"" : { ""N"" : ""4"" },      ""start"" : { ""N"" : ""0"" }    }  }}"
-# "climateControlSynchronize","lift up zone control button to select sync option. Alternatively, press and hold left temperature dial.","{  ""LeftTemperatureDial"" : { ""M"" : {      ""end"" : { ""N"" : ""7.5"" },      ""start"" : { ""N"" : ""5.5"" }    }  },  ""ZoneControlButton"" : { ""M"" : {      ""end"" : { ""N"" : ""5.5"" },      ""start"" : { ""N"" : ""0"" }    }  }}"
