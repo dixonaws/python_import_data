@@ -12,3 +12,4 @@ Recommended to create a Python virtual environment with:
 virtualenv `which python3` venv<br>
 source venv/bin/activate<br>
 pip3 install -r requirements.txt
+</code>
