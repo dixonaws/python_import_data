@@ -1,11 +1,22 @@
 import boto3
 import sys
 import csv
-import json
+import argparse
+
 
 def main():
-    str_filename="awsauto_manual-ddb-table.csv"
-    str_table_name = "awsauto_manual"
+    parser = argparse.ArgumentParser(
+        description="Specify the number of records to generate and the filename to write, e.g. generate_records.py 1000 my_csv_file.csv")
+
+    parser.add_argument("csvfile", help="The path to the input file.")
+    parser.add_argument("table_name",
+                        help="The name of the target DynamoDB table.")
+
+    args = parser.parse_args()
+
+    str_filename = str(args.csvfile)
+
+    str_table_name = str(args.table_name)
 
     # lst_metadata will contain the values from the header row
     lst_metadata = []
@@ -14,7 +25,7 @@ def main():
     lst_items = []
 
     # lst_header_row will contain the first row of the CSV file
-    lst_header_row=[]
+    lst_header_row = []
 
     dynamo_resource = boto3.resource("dynamodb", region_name="us-east-1")
 
@@ -25,24 +36,24 @@ def main():
     sys.stdout.write("Opening CSV file (" + str_filename + ")... ")
 
     with open(str_filename, "r", newline='') as file_csv:
-        csv_reader=csv.reader(file_csv, delimiter=',', quotechar='"')
+        csv_reader = csv.reader(file_csv, delimiter=',', quotechar='"')
 
         # read the first line of the file (the header row)
-        lst_header_row=csv_reader.__next__()
+        lst_header_row = csv_reader.__next__()
         print("done, input file has " + str(len(lst_header_row)) + " columns.")
 
         for field in lst_header_row:
-            str_column_name=field.split(" ")[0]
-            str_column_type=field.split(" ")[1]
+            str_column_name = field.split(" ")[0]
+            str_column_type = field.split(" ")[1]
             lst_metadata.append(str_column_name)
 
         print("lst_metadata: " + str(lst_metadata))
 
-        for row in csv_reader: # row is a list of strings representing a record in the csv file
+        for row in csv_reader:  # row is a list of strings representing a record in the csv file
             dict_item = {}
 
             for col in range(0, len(lst_metadata)):
-                dict_item[lst_metadata[col]]=row[col]
+                dict_item[lst_metadata[col]] = row[col]
 
             lst_items.append(dict_item)
         # for row in csv_reader
